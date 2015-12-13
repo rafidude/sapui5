@@ -28,6 +28,29 @@
                 xmlns:app="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
                 xmlns:mvc="sap.ui.core.mvc">
                 <List
+                    id="assigned"
+                    headerText="Assigned Invoices"
+                    class="sapUiResponsiveMargin"
+                    width="auto"
+                    items="{assigned>/Invoices}"
+                    >
+                    <items>
+                        <CustomListItem>
+                            <HBox>
+                                <core:Icon size="1rem" app:pName="{assigned>ProductName}"
+                                    src="{=(${invoice>favIcon})? 'sap-icon://favorite' : 'sap-icon://unfavorite'}"
+                                    press="handleFavorites"
+                                    class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" />
+                                <VBox  class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" >
+                                    <Label text="{assigned>ProductName}"/>
+                                </VBox>
+                            </HBox>
+                        </CustomListItem>
+                    </items>
+                </List>
+
+                <List
+                    id="all"
                     headerText="Invoices List"
                     class="sapUiResponsiveMargin"
                     width="auto"
@@ -50,17 +73,26 @@
             </mvc:View>
         </script>
         <script>
-            var oInvoiceModel;
+            var oInvoiceModel, oAssignedModel;
             var myPref = {favoriteProducts: ['Milk']};
             sap.ui.getCore().attachInit(function () {
                 "use strict";
                 sap.ui.controller("MyController", {
+                    invoices: [],
+                    assigned: [],
                     onInit : function () {
                         oInvoiceModel = new sap.ui.model.json.JSONModel();
                         oInvoiceModel.loadData("./invoices.json");
-                        this.getView().setModel(oInvoiceModel, "invoice");
+                        this.getView().byId('all').setModel(oInvoiceModel, "invoice");
+
                         var that = this;
                         oInvoiceModel.attachRequestCompleted(function(ev){
+                            that.invoices = that.getView().byId('all').getModel('invoice').getProperty('/Invoices/');
+
+                            that.assigned = [that.invoices[1]];
+                            oAssignedModel = new sap.ui.model.json.JSONModel({"Invoices": that.assigned});
+                            that.getView().byId('assigned').setModel(oAssignedModel, "assigned");
+
                             that.applyFavorites();
                         });
                     },
@@ -70,24 +102,31 @@
                     },
                     applyFavorites : function(titleClicked){
                         var favoriteProducts = myPref.favoriteProducts;
-                        var invoices = this.getView().getModel('invoice').getProperty('/Invoices/');
-                        invoices.forEach(function(inv){inv.favIcon = false;});
+                        this.invoices.forEach(function(inv){inv.favIcon = false;});
                         var idx, ele;
+                        var that = this;
                         if (titleClicked) {
                             var idx = favoriteProducts.indexOf(titleClicked);
                             if (idx > -1) {
                                 favoriteProducts.splice(idx, 1);
+                                idx = that.assigned.findIndex(function(inv){if (inv.ProductName == titleClicked) return inv;});
+                                that.assigned.splice(idx, 1);
                             } else {
                                 favoriteProducts.unshift(titleClicked);
                             }
                         }
                         favoriteProducts.forEach(function(fav){
-                            idx = invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
-                            ele = invoices.splice(idx, 1);
+                            idx = that.invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
+                            ele = that.invoices.splice(idx, 1);
                             ele[0]["favIcon"] = true;
-                            invoices.unshift(ele[0]);
+                            that.invoices.unshift(ele[0]);
+                            idx = that.assigned.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
+                            if (idx == -1) {
+                                that.assigned.push(ele[0]);
+                            }
                         });
-                        this.getView().getModel('invoice').setProperty('/Invoices/', invoices);
+                        this.getView().byId('all').getModel('invoice').setProperty('/Invoices/', this.invoices);
+                        this.getView().byId('assigned').getModel('assigned').setProperty('/Invoices/', this.assigned);
                     }
                 });
 
