@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>SAPUI5 single file template</title>
+        <!-- decide what version you want to use, see http://scn.sap.com/community/developer-center/front-end/blog/2015/07/30/multi-version-availability-of-sapui5:
+        <script src="https://sapui5.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://sapui5.hana.ondemand.com/1.28.11/resources/sap-ui-core.js"
+        <script src="https://openui5beta.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://openui5.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://openui5.hana.ondemand.com/1.30.7/resources/sap-ui-core.js"
+        -->
+        <script src="https://openui5beta.hana.ondemand.com/resources/sap-ui-core.js"
+            id="sap-ui-bootstrap"
+            data-sap-ui-theme="sap_bluecrystal"
+            data-sap-ui-libs="sap.m"
+            data-sap-ui-bindingSyntax="complex"
+            data-sap-ui-compatVersion="edge"
+            data-sap-ui-preload="async"></script>
+            <!-- use "sync" or change the code below if you have issues -->
+
+        <!-- XMLView -->
+        <script id="names" type="ui5/xmlview">
+            <mvc:View
+                controllerName="MyController"
+                xmlns="sap.m"
+                xmlns:core="sap.ui.core"
+                xmlns:app="http://schemas.sap.com/sapui5/extension/sap.ui.core.CustomData/1"
+                xmlns:mvc="sap.ui.core.mvc">
+                <List
+                    headerText="Invoices List"
+                    class="sapUiResponsiveMargin"
+                    width="auto"
+                    items="{invoice>/Invoices}" 
+                    >
+                    <items>
+                        <CustomListItem>
+                            <HBox>
+                                <core:Icon size="1rem" app:pName="{invoice>ProductName}"
+                                    src="{=(${invoice>favIcon})? 'sap-icon://favorite' : 'sap-icon://unfavorite'}"
+                                    press="handleFavorites"
+                                    class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" />
+                                <VBox  class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" >
+                                    <Label text="{invoice>ProductName}"/>
+                                </VBox>
+                            </HBox>
+                        </CustomListItem>
+                    </items>
+                </List>
+            </mvc:View>
+        </script>
+        <script>
+            var oInvoiceModel;
+            var myPref = {favoriteProducts: ['Milk']};
+            sap.ui.getCore().attachInit(function () {
+                "use strict";
+                sap.ui.controller("MyController", {
+                    onInit : function () {
+                        oInvoiceModel = new sap.ui.model.json.JSONModel();
+                        oInvoiceModel.loadData("./invoices.json");
+                        this.getView().setModel(oInvoiceModel, "invoice");
+                        var that = this;
+                        oInvoiceModel.attachRequestCompleted(function(ev){
+                            that.applyFavorites();
+                        });
+                    },
+                    handleFavorites : function(oEvent) {
+                        var titleClicked = oEvent.getSource().data("pName");
+                        this.applyFavorites(titleClicked);
+                    },
+                    applyFavorites : function(titleClicked){
+                        var favoriteProducts = myPref.favoriteProducts;
+                        var invoices = this.getView().getModel('invoice').getProperty('/Invoices/');
+                        invoices.forEach(function(inv){inv.favIcon = false;});
+                        var idx, ele;
+                        if (titleClicked) {
+                            var idx = favoriteProducts.indexOf(titleClicked);
+                            if (idx > -1) {
+                                favoriteProducts.splice(idx, 1);
+                            } else {
+                                favoriteProducts.unshift(titleClicked);
+                            }
+                        }
+                        favoriteProducts.forEach(function(fav){
+                            idx = invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
+                            ele = invoices.splice(idx, 1);
+                            ele[0]["favIcon"] = true;
+                            invoices.unshift(ele[0]);
+                        });
+                        this.getView().getModel('invoice').setProperty('/Invoices/', invoices);
+                    }
+                });
+
+                sap.ui.xmlview({
+                    viewContent : jQuery("#names").html()
+                }).placeAt("content");
+            });
+        </script>
+    </head>
+ 
+    <body class="sapUiBody">
+        <div id="content"></div>
+    </body>
+</html>

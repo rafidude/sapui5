@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>SAPUI5 single file template</title>
+        <!-- decide what version you want to use, see http://scn.sap.com/community/developer-center/front-end/blog/2015/07/30/multi-version-availability-of-sapui5:
+        <script src="https://sapui5.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://sapui5.hana.ondemand.com/1.28.11/resources/sap-ui-core.js"
+        <script src="https://openui5beta.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://openui5.hana.ondemand.com/resources/sap-ui-core.js"
+        <script src="https://openui5.hana.ondemand.com/1.30.7/resources/sap-ui-core.js"
+        -->
+        <script src="https://openui5beta.hana.ondemand.com/resources/sap-ui-core.js"
+            id="sap-ui-bootstrap"
+            data-sap-ui-theme="sap_bluecrystal"
+            data-sap-ui-libs="sap.m"
+            data-sap-ui-bindingSyntax="complex"
+            data-sap-ui-compatVersion="edge"
+            data-sap-ui-preload="async"></script>
+            <!-- use "sync" or change the code below if you have issues -->
+
+        <!-- XMLView -->
+        <script id="names" type="ui5/xmlview">
+            <mvc:View
+                controllerName="MyController"
+                xmlns="sap.m"
+				xmlns:core="sap.ui.core"
+                xmlns:mvc="sap.ui.core.mvc">
+                <List
+                    headerText="Invoices List"
+                    class="sapUiResponsiveMargin"
+                    width="auto"
+                    items="{invoice>/Invoices}" 
+                    >
+                    <items>
+                        <CustomListItem>
+							<HBox>
+								<core:Icon size="2rem" src="{= (!!(${invoice>Favorite})) ? 'sap-icon://favorite' : 'sap-icon://unfavorite' }" press="handleFavs" class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" />
+								<Title level="H3" text="{invoice>ProductName}"/>
+							</HBox>
+                        </CustomListItem>
+                    </items>
+                </List>
+            </mvc:View>
+        </script>
+        <script>
+            var idx, ele;
+            var applyFavorites = function(favoriteProducts, invoices){
+                favoriteProducts.forEach(function(fav){
+                    idx = invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
+                    ele = invoices.splice(idx, 1);
+                    invoices.unshift(ele[0]);
+                });
+                return invoices;
+            }
+            var oInvoiceModel;
+            var myPref = {favoriteProducts: []};
+            sap.ui.getCore().attachInit(function () {
+                "use strict";
+                sap.ui.controller("MyController", {
+                    onInit : function () {
+                        oInvoiceModel = new sap.ui.model.json.JSONModel();
+                        oInvoiceModel.loadData("./invoices.json");
+                        var that = this;
+                        oInvoiceModel.attachRequestCompleted(function(ev){
+                            oInvoiceModel.oData.Invoices = applyFavorites(myPref.favoriteProducts, oInvoiceModel.oData.Invoices)
+                            that.getView().setModel(oInvoiceModel, "invoice");
+                        });
+                    },
+                    handleFavorites : function(oEvent) {
+                        var titleClicked = oEvent.getSource().mProperties.title; 
+                        myPref.favoriteProducts.unshift(titleClicked);
+                        console.log(oInvoiceModel.getProperty('/Invoices/1/Favorite'));
+                        oInvoiceModel.setProperty('/Invoices/1/Favorite',true);
+                        console.log(oInvoiceModel.getProperty('/Invoices/1/Favorite'));
+                        oInvoiceModel.oData.Invoices = applyFavorites(myPref.favoriteProducts, oInvoiceModel.oData.Invoices)
+                        // this.getView().setModel(oInvoiceModel, "invoice");
+                        oInvoiceModel.refresh(true);
+                    }
+                });
+
+                sap.ui.xmlview({
+                    viewContent : jQuery("#names").html()
+                }).placeAt("content");
+            });
+        </script>
+    </head>
+ 
+    <body class="sapUiBody">
+        <div id="content"></div>
+    </body>
+</html>
