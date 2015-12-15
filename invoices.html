@@ -100,6 +100,17 @@
                     },
                     handleFavorites : function(oEvent) {
                         var titleClicked = oEvent.getSource().data("pName");
+                        if (titleClicked) {
+                            var favoriteProducts = this.myPref.favoriteProducts;
+                            var idx = favoriteProducts.indexOf(titleClicked);
+                            if (idx > -1) {
+                                favoriteProducts.splice(idx, 1);
+                                idx = this.assigned.findIndex(function(inv){if (inv.ProductName == titleClicked) return inv;});
+                                this.assigned.splice(idx, 1);
+                            } else {
+                                favoriteProducts.push(titleClicked);
+                            }
+                        }
                         this.applyFavorites(titleClicked);
                     },
                     applyFavorites : function(titleClicked){
@@ -107,17 +118,7 @@
                         this.invoices.forEach(function(inv){inv.favIcon = false;});
                         var idx, ele;
                         var that = this;
-                        if (titleClicked) {
-                            var idx = favoriteProducts.indexOf(titleClicked);
-                            if (idx > -1) {
-                                favoriteProducts.splice(idx, 1);
-                                idx = that.assigned.findIndex(function(inv){if (inv.ProductName == titleClicked) return inv;});
-                                that.assigned.splice(idx, 1);
-                            } else {
-                                favoriteProducts.unshift(titleClicked);
-                            }
-                        }
-                        favoriteProducts.forEach(function(fav){
+                        favoriteProducts.reverse().forEach(function(fav){
                             idx = that.invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
                             ele = that.invoices.splice(idx, 1);
                             ele[0]["favIcon"] = true;
