@@ -83,6 +83,9 @@
                         oInvoiceModel.loadData("./invoices.json");
                         this.getView().byId('all').setModel(oInvoiceModel, "invoice");
 
+                        oAssignedModel = new sap.ui.model.json.JSONModel({"Invoices": this.assigned});
+                        this.getView().byId('assigned').setModel(oAssignedModel, "assigned");
+
                         var that = this, idx;
                         oInvoiceModel.attachRequestCompleted(function(ev){
                             that.invoices = that.getView().byId('all').getModel('invoice').getProperty('/Invoices/');
@@ -92,8 +95,6 @@
                                 idx = that.invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
                                 that.assigned.push(that.invoices[idx]);
                             });
-                            oAssignedModel = new sap.ui.model.json.JSONModel({"Invoices": that.assigned});
-                            that.getView().byId('assigned').setModel(oAssignedModel, "assigned");
 
                             that.applyFavorites();
                         });
