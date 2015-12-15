@@ -37,10 +37,6 @@
                     <items>
                         <CustomListItem>
                             <HBox>
-                                <core:Icon size="1rem" app:pName="{assigned>ProductName}"
-                                    src="{=(${invoice>favIcon})? 'sap-icon://favorite' : 'sap-icon://unfavorite'}"
-                                    press="handleFavorites"
-                                    class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" />
                                 <VBox  class="sapUiSmallMarginBegin sapUiSmallMarginTopBottom" >
                                     <Label text="{assigned>ProductName}"/>
                                 </VBox>
@@ -74,22 +70,28 @@
         </script>
         <script>
             var oInvoiceModel, oAssignedModel;
-            var myPref = {favoriteProducts: ['Milk']};
             sap.ui.getCore().attachInit(function () {
                 "use strict";
                 sap.ui.controller("MyController", {
+                    getAssignedInvoices: function(){return [{"ProductName": "Cereal"}];},
+                    getUserPreferences: function(){return {favoriteProducts: ['Milk', 'Salad']};},
                     invoices: [],
                     assigned: [],
+                    myPref: [],
                     onInit : function () {
                         oInvoiceModel = new sap.ui.model.json.JSONModel();
                         oInvoiceModel.loadData("./invoices.json");
                         this.getView().byId('all').setModel(oInvoiceModel, "invoice");
 
-                        var that = this;
+                        var that = this, idx;
                         oInvoiceModel.attachRequestCompleted(function(ev){
                             that.invoices = that.getView().byId('all').getModel('invoice').getProperty('/Invoices/');
-
-                            that.assigned = [that.invoices[1]];
+                            that.assigned = that.getAssignedInvoices();
+                            that.myPref = that.getUserPreferences();
+                            that.myPref.favoriteProducts.forEach(function(fav){
+                                idx = that.invoices.findIndex(function(inv){if (inv.ProductName == fav) return inv;});
+                                that.assigned.push(that.invoices[idx]);
+                            });
                             oAssignedModel = new sap.ui.model.json.JSONModel({"Invoices": that.assigned});
                             that.getView().byId('assigned').setModel(oAssignedModel, "assigned");
 
@@ -101,7 +103,7 @@
                         this.applyFavorites(titleClicked);
                     },
                     applyFavorites : function(titleClicked){
-                        var favoriteProducts = myPref.favoriteProducts;
+                        var favoriteProducts = this.myPref.favoriteProducts;
                         this.invoices.forEach(function(inv){inv.favIcon = false;});
                         var idx, ele;
                         var that = this;
